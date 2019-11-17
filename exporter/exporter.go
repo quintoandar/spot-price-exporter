@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/aws/aws-sdk-go/service/pricing"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,6 +21,7 @@ type Exporter struct {
 	partitions          []string
 	productDescriptions []string
 	regions []string
+	onDemand bool
 	duration            prometheus.Gauge
 	scrapeErrors        prometheus.Gauge
 	totalScrapes        prometheus.Counter
@@ -38,7 +40,7 @@ type scrapeResult struct {
 }
 
 // NewExporter returns a new exporter of AWS Spot Price metrics.
-func NewExporter(p []string, pds []string, regions []string) (*Exporter, error) {
+func NewExporter(p []string, pds []string, regions []string, onDemand bool) (*Exporter, error) {
 
 	session, err := session.NewSession()
 	if err != nil {
@@ -51,6 +53,7 @@ func NewExporter(p []string, pds []string, regions []string) (*Exporter, error) 
 		partitions:          p,
 		productDescriptions: pds,
 		regions: regions,
+		onDemand: onDemand,
 		duration: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: "aws_spot",
 			Name:      "scrape_duration_seconds",
@@ -79,6 +82,14 @@ func (e *Exporter) initGauges() {
 		Name:      "current_price",
 		Help:      "Current spot price of the instance type.",
 	}, []string{"instance_type", "region", "availability_zone", "product_description"})
+
+	if e.onDemand {
+		e.spotMetrics["on_demand_price"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "aws_spot",
+			Name:      "on_demand_price",
+			Help:      "On-demand price of the instance type.",
+		}, []string{"instance_type", "region", "availability_zone", "product_description"})
+	}
 }
 
 // Describe outputs metric descriptions.

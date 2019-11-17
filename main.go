@@ -18,6 +18,7 @@ var (
 	partitions          = flag.String("partitions", "aws", "Comma separated list of AWS partitions. Accepted values: aws, aws-cn, aws-us-gov")
 	productDescriptions = flag.String("product-descriptions", "Linux/UNIX", "Comma separated list of product descriptions. Accepted values: Linux/UNIX, SUSE Linux, Windows, Linux/UNIX (Amazon VPC), SUSE Linux (Amazon VPC), Windows (Amazon VPC)")
 	regions = flag.String("regions", "", "Comma separated list of AWS regions to get pricing for (defaults to *all*)")
+	onDemand = flag.Bool("include-on-demand",false,"Also export on-demand prices as a separate metric")
 )
 
 func init() {
@@ -38,7 +39,7 @@ func main() {
 	regions := splitAndTrim(*regions)
 	validatePartitions(parts)
 	validateProductDesc(pds)
-	exporter, err := exporter.NewExporter(parts, pds, regions)
+	exporter, err := exporter.NewExporter(parts, pds, regions, *onDemand)
 	if err != nil {
 		log.Fatal(err)
 	}
